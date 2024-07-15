@@ -1,0 +1,105 @@
+version: '3.7'
+
+services:
+  selenium-chrome:
+    image: selenium/standalone-chrome
+    container_name: selenium-chrome
+    networks:
+      - my-network
+    ports:
+      - "4444:4444"
+    profiles:
+      - "gui"
+
+  gui-test:
+    build:
+      context: .
+      dockerfile: gui-tests/Dockerfile
+    container_name: gui-test
+    depends_on:
+      - selenium-chrome
+    environment:
+      SELENIDE_REMOTE: http://selenium-chrome:4444/wd/hub
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+    networks:
+      - my-network
+    volumes:
+      - ./gui-allure-results:/app/gui-tests/gui-allure-results
+    command: ["mvn", "test", "-pl", "gui-tests"]
+    profiles:
+      - "gui"
+
+  allure-gui:
+    image: frankescobar/allure-docker-service
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: 3
+      KEEP_HISTORY: 1
+    ports:
+      - "5051:5050"
+    volumes:
+      - ./gui-allure-results:/app/allure-results
+      - ./gui-allure-reports:/app/default-reports
+    networks:
+      - my-network
+    profiles:
+      - "gui"
+
+  allure-gui-ui:
+    image: frankescobar/allure-docker-service-ui
+    environment:
+      ALLURE_DOCKER_PUBLIC_API_URL: "http://allure-gui:5050"
+    ports:
+      - "5253:5252"
+    depends_on:
+      - allure-gui
+    networks:
+      - my-network
+    profiles:
+      - "gui"
+
+  api-test:
+    build:
+      context: .
+      dockerfile: api-tests/Dockerfile
+    container_name: api-test
+    volumes:
+      - ./api-allure-results:/app/api-tests/api-allure-results
+    networks:
+      - my-network
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+    command: ["mvn", "test", "-pl", "api-tests"]
+    profiles:
+      - "api"
+
+  allure-api:
+    image: frankescobar/allure-docker-service
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: 3
+      KEEP_HISTORY: 1
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./api-allure-results:/app/allure-results
+      - ./api-allure-reports:/app/default-reports
+    networks:
+      - my-network
+    profiles:
+      - "api"
+
+  allure-api-ui:
+    image: frankescobar/allure-docker-service-ui
+    environment:
+      ALLURE_DOCKER_PUBLIC_API_URL: "http://allure-api:5050"
+    ports:
+      - "5252:5252"
+    depends_on:
+      - allure-api
+    networks:
+      - my-network
+    profiles:
+      - "api"
+
+networks:
+  my-network:
+    driver: bridge

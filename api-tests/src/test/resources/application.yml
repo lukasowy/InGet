@@ -1,0 +1,7 @@
+api:
+  base-uri: https://api-pl-points.easypack24.net/v1
+  per-page: 500
+
+file:
+  save:
+    directory: 'saved_cities/'

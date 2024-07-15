@@ -1,0 +1,4 @@
+selenide:
+#  remote: ${SELENIDE_REMOTE:http://localhost:4444/wd/hub}
+  browser: chrome
+  baseUrl: https://inpost.pl
